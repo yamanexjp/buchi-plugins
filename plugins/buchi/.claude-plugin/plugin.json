@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "buchi",
+  "version": "0.5.0",
+  "description": "ぶち AI ゲートウェイ経由で Claude Code のモデル呼び出しをルーティングするための設定支援プラグイン（byok モード。DLP と利用可視化が目的）",
+  "author": {
+    "name": "yamanexjp"
+  },
+  "homepage": "https://github.com/yamanexjp/buchi-plugins",
+  "repository": "https://github.com/yamanexjp/buchi-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "buchi",
+    "gateway",
+    "llm-proxy"
+  ],
+  "defaultEnabled": false,
+  "userConfig": {
+    "gateway_url": {
+      "type": "string",
+      "title": "ぶちゲートウェイ URL",
+      "description": "接続先ゲートウェイのベース URL（例: https://<あなた>.gw.buchi.ai）。トークンは含めない（/c/<token> 付きで貼った場合は自動で分解します）。",
+      "default": ""
+    },
+    "gateway_token": {
+      "type": "string",
+      "title": "ゲートウェイトークン",
+      "description": "ぶち AI ゲートウェイの認証トークン。値はマスクされ、末尾4文字のみ表示されます。",
+      "default": "",
+      "sensitive": true
+    },
+    "mode": {
+      "type": "string",
+      "title": "接続モード",
+      "description": "byok = パスベース認証（https://<gw>/c/<token>、v1で実装済み）。saas = テナントサブドメイン + ANTHROPIC_AUTH_TOKEN（TODO(O-1): 未提供、選択時はエラーを返す）。有効な値: byok, saas。",
+      "default": "byok"
+    },
+    "settings_scope": {
+      "type": "string",
+      "title": "設定書き込みスコープ",
+      "description": "settings.json の書き込み先スコープ。有効な値: user, project。",
+      "default": "user"
+    }
+  }
+}

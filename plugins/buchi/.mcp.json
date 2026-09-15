@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "buchi": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"
+      ],
+      "env": {
+        "BUCHI_GATEWAY_URL": "${user_config.gateway_url}",
+        "BUCHI_GATEWAY_TOKEN": "${user_config.gateway_token}",
+        "BUCHI_MODE": "${user_config.mode}",
+        "BUCHI_SETTINGS_SCOPE": "${user_config.settings_scope}"
+      }
+    }
+  }
+}
