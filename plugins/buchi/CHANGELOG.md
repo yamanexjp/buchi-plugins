@@ -23,8 +23,13 @@
 - README に非対話インストール手順（`claude plugin install --config ...`、
   2.1.273 で実測）と「status と verify の違い」を追記。配布元を
   `yamanexjp/buchi-plugins` に確定。
-- テスト S10a〜S10r（verify の 7 シナリオ）を追加。A5 の漏えい grep 対象に
-  ダミー API キー / 誤トークンを追加（15 種）。
+- テスト S10a〜S10t（verify の 9 シナリオ）と S11a〜S11j（classifyProbe の
+  全分岐）を追加。A5 の漏えい grep 対象にダミー API キー / 誤トークンを追加（15 種）。
+- push-gate レビュー（opus）指摘の反映: DLP 遮断は HTTP 400（403 ではない）なので
+  `error.type` のみで判定／プローブのタイムアウトを総所要時間の上限として強制／
+  `full: true` の API キーを最終 sanitize 対象に登録／settings.json 不正時の [1/3]
+  二重表示を解消／シェル export のみで通過した場合は結果行に「settings 未設定」を明記／
+  副作用（統計・日次上限・エラー率への計上）を SKILL.md と README に明記。
 
 ### Changed
 

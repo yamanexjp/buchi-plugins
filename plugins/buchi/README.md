@@ -64,6 +64,10 @@ claude            # 起動後に /buchi:setup → 同意 → Claude Code を再�
 `--config` で渡した `gateway_token` は sensitive 扱いで Claude Code の
 credentials ストア（`~/.claude/.credentials.json` 等）に保管され、
 `settings.json` には書かれません（`/buchi:setup` を適用するまでは）。
+ただしコマンドラインに載せるためシェル履歴には残ります。気になる場合は
+コマンド先頭に半角スペースを付けて実行する（`HISTCONTROL=ignorespace`）か、
+B の対話方式で入力してください。`claude plugin install --config` は
+**2.1.273 で実測**した非対話フラグです（それより古い版では B を使ってください）。
 
 ### B. Claude Code の中から（対話）
 
@@ -101,7 +105,7 @@ credentials ストア（`~/.claude/.credentials.json` 等）に保管され、
 | `/buchi:on` | 変更（要同意） | 解除後の再接続（setup 再実行相当。初回は `/buchi:setup`） |
 | `/buchi:status` | 照会 | 接続先（マスク表示）・反映状態（再起動待ち検知）・healthz 疎通を表示 |
 | `/buchi:doctor` | 照会 | 診断 D1〜D7（バージョン / JSON 妥当性 / env 競合 / 疎通 / トークン有効性(doctor は送信しない・verify へ誘導) / Remote Control 警告 / コスト効果の正直な説明） |
-| `/buchi:verify` | 照会（1 リクエスト送信） | **実際にゲートウェイを通過しているか**を無害なテスト要求で確認。「設定済み」「疎通成功」「稼働セッションが設定を使用」「実際の通過（トークン受理→検査→上流転送）」を分けて表示。既定はプレースホルダ鍵でコスト 0。`full: true` で env の `ANTHROPIC_API_KEY` を使い上流応答まで確認（出力 1 トークン分） |
+| `/buchi:verify` | 照会（1 リクエスト送信） | **実際にゲートウェイを通過しているか**を無害なテスト要求で確認。「設定済み」「疎通成功」「稼働セッションが設定を使用」「実際の通過（トークン受理→検査→上流転送）」を分けて表示。既定はプレースホルダ鍵でコスト 0（上流が鍵を拒否する通常構成の場合。鍵を無視する上流では出力 1 トークン分）。`full: true` で env の `ANTHROPIC_API_KEY` を使い上流応答まで確認（出力 1 トークン分） |
 
 ### status と verify の違い（重要）
 
@@ -112,6 +116,10 @@ credentials ストア（`~/.claude/.credentials.json` 等）に保管され、
 「稼働セッションの env が設定と一致しているか」「ゲートウェイがトークンを受理して
 上流へ転送したか」を、それぞれ独立した OK/NG として表示します。接続作業の
 最後は必ず `/buchi:verify` で締めてください。
+
+なお verify のプローブは課金こそ 0 ですが、ゲートウェイの統計（リクエスト数・
+上流 4xx・直近エラー率）に計上され、日次リクエスト上限を 1 消費します。
+要所（setup 直後・再起動後・トラブル時）でだけ実行してください。
 
 SessionStart hook が毎セッション 1 行だけ接続状態を表示します
 （例: `ぶち: 接続中 (gw.example.dev)`。ホスト名のみで、トークンは表示しません）。

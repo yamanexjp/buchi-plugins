@@ -376,6 +376,7 @@ export function describeHealth(h) {
  * POST <baseUrl>/v1/messages with a minimal, harmless body (max_tokens: 1,
  * "ping"). Purpose: prove the gateway ACCEPTED the token embedded in baseUrl
  * and ran its pipeline (scan -> forward), which /healthz cannot show.
+ * Default timeout 30s (overall deadline; see the note above the function).
  *
  * apiKey: if omitted, a placeholder key is sent. The gateway forwards it and
  * the upstream answers 401 authentication_error — that response shape (an
@@ -386,7 +387,12 @@ export function describeHealth(h) {
  * Returns a classification only; the response body is never returned raw
  * (only `type`/`error.type`/`message` fields, truncated).
  */
-export function probeMessages(baseUrl, { apiKey, timeoutMs = 10000, model = 'claude-haiku-4-5-20251001' } = {}) {
+// timeoutMs: the gateway runs its scan pipeline (secret/PII/injection; measured
+// 5-6s per window on production sidecars) BEFORE forwarding, so this must be
+// far longer than the 2s healthz budget. 30s measured OK against a real gateway.
+// It is enforced as an OVERALL deadline (not just the socket-idle timeout), so a
+// slow-drip response cannot keep the tool hanging past it.
+export function probeMessages(baseUrl, { apiKey, timeoutMs = 30000, model = 'claude-haiku-4-5-20251001' } = {}) {
   return new Promise((resolve) => {
     let url;
     try { url = new URL(`${String(baseUrl).replace(/\/+$/, '')}/v1/messages`); }
@@ -401,6 +407,8 @@ export function probeMessages(baseUrl, { apiKey, timeoutMs = 10000, model = 'cla
       'user-agent': 'buchi-plugin-verify',
     };
     const started = Date.now();
+    let settled = false;
+    const finish = (v) => { if (!settled) { settled = true; clearTimeout(deadline); resolve(v); } };
     const req = mod.request(url, { method: 'POST', headers, timeout: timeoutMs }, (res) => {
       let raw = '';
       res.setEncoding('utf8');
@@ -424,9 +432,10 @@ export function probeMessages(baseUrl, { apiKey, timeoutMs = 10000, model = 'cla
           trialDaysRemaining: clip(res.headers['x-buchi-trial-days-remaining'] || res.headers['x-buchi-trial-days-left']),
           budgetWarning: clip(res.headers['x-buchi-budget-warning']),
         };
-        resolve(classifyProbe(info));
+        finish(classifyProbe(info));
       });
     });
+    const deadline = setTimeout(() => { req.destroy(new Error('timeout')); }, timeoutMs);
     req.on('timeout', () => { req.destroy(new Error('timeout')); });
     req.on('error', (err) => {
       const msg = String(err.message || err.code || err);
@@ -435,7 +444,7 @@ export function probeMessages(baseUrl, { apiKey, timeoutMs = 10000, model = 'cla
       else if (/ENOTFOUND|EAI_AGAIN/.test(msg)) kind = 'dns';
       else if (/CERT|TLS|SSL|handshake/i.test(msg)) kind = 'tls';
       else if (/ECONNREFUSED/.test(msg)) kind = 'refused';
-      resolve({ ok: false, kind, detail: msg, ms: Date.now() - started });
+      finish({ ok: false, kind, detail: msg, ms: Date.now() - started, timeoutMs });
     });
     req.write(body);
     req.end();
@@ -448,7 +457,7 @@ export function probeMessages(baseUrl, { apiKey, timeoutMs = 10000, model = 'cla
  * Body shapes (measured against the real gateway, 2026-09-16):
  *   gateway's own errors (writeErr)      : {"error":{"type":"unauthorized","message":"invalid gateway token"}}
  *   gateway's own errors (writeJSONError): {"error":{"code":"...","message":"..."}}
- *   gateway DLP block                    : {"error":{"type":"blocked_sensitive_content",...}}   (HTTP 403)
+ *   gateway DLP block                    : {"error":{"type":"blocked_sensitive_content",...}}   (HTTP 400; writeErrBlocked)
  *   Anthropic upstream error (forwarded) : {"type":"error","error":{"type":"authentication_error",...}}
  * i.e. the top-level "type":"error" marker is what distinguishes a forwarded
  * upstream error from an error the gateway produced itself.
@@ -456,7 +465,7 @@ export function probeMessages(baseUrl, { apiKey, timeoutMs = 10000, model = 'cla
  *   passed=true  : the gateway accepted the token and forwarded (or ran its
  *                  pipeline on) the request. kind: 'upstream_ok' (200),
  *                  'upstream_auth' (upstream-format 401), 'blocked' (gateway
- *                  DLP 403), 'accepted_other' (other upstream-format error).
+ *                  DLP block, HTTP 400), 'accepted_other' (other upstream-format error).
  *   passed=false : kind 'gateway_token' (gateway's own 401 invalid token),
  *                  'gateway_other' (gateway-format non-auth error), or a
  *                  network kind from probeMessages.
@@ -464,12 +473,25 @@ export function probeMessages(baseUrl, { apiKey, timeoutMs = 10000, model = 'cla
 export function classifyProbe(info) {
   const upstreamShaped = info.bodyType === 'error' && info.errorType !== '';
   const gatewayShaped = info.bodyType === '' && (info.errorType !== '' || info.errorCode !== '');
-  if (info.status >= 200 && info.status < 300) return { ok: true, passed: true, kind: 'upstream_ok', ...info };
+  // 2xx alone is NOT evidence: a captive portal, a catch-all reverse proxy or a
+  // wrong BASE_URL pointing at an unrelated server also answers 200. Require the
+  // Anthropic Messages response shape ({"type":"message",...}) that a forwarded
+  // upstream reply (or the E2E mock upstream) actually carries.
+  if (info.status >= 200 && info.status < 300) {
+    if (info.bodyType === 'message') return { ok: true, passed: true, kind: 'upstream_ok', ...info };
+    return { ok: true, passed: false, kind: 'unknown', ...info };
+  }
   if (info.status === 401 && !upstreamShaped && (info.errorType === 'unauthorized' || /invalid gateway token/i.test(info.message))) {
     return { ok: true, passed: false, kind: 'gateway_token', ...info };
   }
   if (info.status === 401 && upstreamShaped) return { ok: true, passed: true, kind: 'upstream_auth', ...info };
-  if (info.status === 403 && info.errorType === 'blocked_sensitive_content') return { ok: true, passed: true, kind: 'blocked', ...info };
+  // Auto-routing (#1128) may forward to an OpenAI-compatible upstream whose 401 has
+  // no top-level "type": {"error":{"type":"invalid_request_error","code":"invalid_api_key"}}.
+  // That is still a forwarded upstream auth error, i.e. pass-through evidence.
+  if (info.status === 401 && info.errorCode === 'invalid_api_key') return { ok: true, passed: true, kind: 'upstream_auth', ...info };
+  // DLP block: the real gateway answers HTTP 400 (writeErrBlocked); match on the
+  // error type only so a future status change cannot silently demote this to gateway_other.
+  if (info.errorType === 'blocked_sensitive_content') return { ok: true, passed: true, kind: 'blocked', ...info };
   if (upstreamShaped) return { ok: true, passed: true, kind: 'accepted_other', ...info };
   if (gatewayShaped) return { ok: true, passed: false, kind: 'gateway_other', ...info };
   return { ok: true, passed: false, kind: 'unknown', ...info };
@@ -478,6 +500,9 @@ export function classifyProbe(info) {
 /** Human-readable lines for a probeMessages()/classifyProbe() result. */
 export function describeProbe(p) {
   if (!p.ok) {
+    if (p.kind === 'timeout') {
+      return `[NG] 通過未確認: タイムアウト（${Math.round((p.timeoutMs || 0) / 1000)}秒）。ゲートウェイの検査層が混雑しているか、ネットワーク/プロキシ（HTTPS_PROXY・NO_PROXY）を確認してください。`;
+    }
     const h = describeHealth({ ok: false, kind: p.kind, detail: p.detail });
     return `[NG] 通過未確認: ${h.replace(/^疎通 NG: /, '')}`;
   }
@@ -492,7 +517,7 @@ export function describeProbe(p) {
     case 'upstream_auth':
       return `[OK] 通過確認済み: ゲートウェイがトークンを受理して上流へ転送しました (上流の認証エラー HTTP ${p.status} を受信、${p.ms}ms)。上流 API キー/サブスク認証は本プローブでは検証していません${tail}`;
     case 'blocked':
-      return `[OK] 通過確認済み: ゲートウェイの検査層が動作しました (HTTP 403 blocked_sensitive_content, ${p.ms}ms)${tail}`;
+      return `[OK] 通過確認済み: ゲートウェイの検査層が動作しました (HTTP ${p.status} blocked_sensitive_content, ${p.ms}ms)${tail}`;
     case 'accepted_other':
       return `[OK] 通過確認済み: ゲートウェイがトークンを受理し、上流形式の応答 (HTTP ${p.status} ${p.errorType}) が返りました${tail}`;
     case 'gateway_token':
@@ -500,6 +525,9 @@ export function describeProbe(p) {
     case 'gateway_other':
       return `[NG] 通過未確認: ゲートウェイ自身がエラーを返しました (HTTP ${p.status} ${p.errorType || p.errorCode}${p.message ? ': ' + p.message : ''})`;
     default:
+      if (p.status >= 200 && p.status < 300) {
+        return `[NG] 通過未確認: HTTP ${p.status} が返りましたが Anthropic Messages 形式の応答ではありません（キャプティブポータル/別サーバー/誤った BASE_URL の可能性。/buchi:doctor で確認してください）`;
+      }
       return `[?] 判定不能: HTTP ${p.status}${p.errorType ? ' ' + p.errorType : ''}${p.message ? ': ' + p.message : ''}`;
   }
 }

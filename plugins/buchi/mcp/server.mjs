@@ -569,14 +569,18 @@ async function runVerify(args) {
 
   // [1/3] 設定済み
   let settingsValue;
+  let settingsReadable = true;
   try {
     const settings = readSettings(settingsPath);
     settingsValue = getEnvKey(settings.json);
     registerFromBaseUrl(settingsValue); // FIX-B
   } catch (err) {
+    settingsReadable = false;
     lines.push(`[1/3] 設定済み: [NG] settings.json が不正な JSON です: ${err.message}（buchi_doctor を推奨）`);
   }
-  if (settingsValue === undefined) {
+  if (!settingsReadable) {
+    // 既に NG 行を出した。二重に「未設定」と出さない。
+  } else if (settingsValue === undefined) {
     lines.push(`[1/3] 設定済み: [NG] env.${MANAGED_KEY} が未設定です（/buchi:setup を実行してください）`);
   } else if (!splitBaseUrl(settingsValue)) {
     lines.push(`[1/3] 設定済み: [注意] env.${MANAGED_KEY} = ${maskUrl(settingsValue)} は /c/<token> 形式ではありません（buchi 管理外の値）`);
@@ -610,14 +614,19 @@ async function runVerify(args) {
     return { text: lines.join('\n'), isError: false };
   }
   const apiKey = full ? process.env.ANTHROPIC_API_KEY : undefined;
+  // 上流/中間プロキシがリクエストヘッダを echo する実装でも鍵が応答文に載らないよう、
+  // 既知シークレット集合に登録して最終 sanitize sweep の対象にする。
+  if (apiKey) registerSecret(apiKey);
   if (full && !apiKey) {
     lines.push('[3/3b] プローブ: [注意] full: true ですが現プロセス env に ANTHROPIC_API_KEY が無いため、プレースホルダ鍵で送ります（サブスク/OAuth 利用時はこれが正常です）');
   }
   const p = await probeMessages(probeTarget, { apiKey });
   lines.push(`[3/3b] プローブ: POST ${maskUrl(probeTarget)}/v1/messages（max_tokens=1, "ping"${apiKey ? '、env の API キー使用' : '、プレースホルダ鍵・コスト 0'}） → ${describeProbe(p)}`);
   const passed = !!p.passed;
-  const sessionOk = procValue !== undefined && (settingsValue === undefined || procValue === settingsValue);
-  if (passed && sessionOk) lines.push('結果: 実際の通過確認済み（この Claude Code セッションの要求はゲートウェイを通過しています）');
+  const configured = settingsReadable && settingsValue !== undefined;
+  const sessionOk = procValue !== undefined && (!configured || procValue === settingsValue);
+  if (passed && sessionOk && configured) lines.push('結果: 実際の通過確認済み（この Claude Code セッションの要求はゲートウェイを通過しています）');
+  else if (passed && sessionOk) lines.push('結果: 実際の通過確認済み（ただし settings.json は未設定/不正で、シェルの export 等の env のみで接続しています。恒久化するには /buchi:setup を実行してください）');
   else if (passed) lines.push('結果: ゲートウェイは通過可能ですが、稼働セッションの設定が未反映/相違です。Claude Code を再起動してから再確認してください');
   else lines.push('結果: 通過未確認（上の [NG] 行を確認してください）');
   return { text: lines.join('\n'), isError: false };
