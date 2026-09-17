@@ -20,8 +20,8 @@ description: ぶち AI ゲートウェイに接続する。ANTHROPIC_BASE_URL �
    何も書き込まずに終了する。
 5. 適用後の応答（結果・バックアップ先・healthz 疎通結果）を提示し、
    **「反映には Claude Code の再起動が必要です」**と必ず案内する。
-   healthz が NG でも設定は保持されている旨（必要なら `/buchi:doctor` で診断、
-   戻すなら `/buchi:off`）を伝える。
+   healthz が NG でも設定は保持されている旨（必要なら `/buchiai-gateway:doctor` で診断、
+   戻すなら `/buchiai-gateway:off`）を伝える。
 
 ## セキュリティ上の絶対条件
 

@@ -37,8 +37,8 @@ import {
   probeMessages, describeProbe,
 } from './lib.mjs';
 
-const SERVER_NAME = 'buchi';
-const SERVER_VERSION = '0.5.0'; // keep in sync with .claude-plugin/plugin.json
+const SERVER_NAME = 'buchiai-gateway';
+const SERVER_VERSION = '0.6.0'; // keep in sync with .claude-plugin/plugin.json
 const MANAGED_KEY = 'ANTHROPIC_BASE_URL';
 const MIN_CLAUDE_VERSION = '2.1.154'; // D1: userConfig support floor
 
@@ -581,7 +581,7 @@ async function runVerify(args) {
   if (!settingsReadable) {
     // 既に NG 行を出した。二重に「未設定」と出さない。
   } else if (settingsValue === undefined) {
-    lines.push(`[1/3] 設定済み: [NG] env.${MANAGED_KEY} が未設定です（/buchi:setup を実行してください）`);
+    lines.push(`[1/3] 設定済み: [NG] env.${MANAGED_KEY} が未設定です（/buchiai-gateway:setup を実行してください）`);
   } else if (!splitBaseUrl(settingsValue)) {
     lines.push(`[1/3] 設定済み: [注意] env.${MANAGED_KEY} = ${maskUrl(settingsValue)} は /c/<token> 形式ではありません（buchi 管理外の値）`);
   } else {
@@ -626,7 +626,7 @@ async function runVerify(args) {
   const configured = settingsReadable && settingsValue !== undefined;
   const sessionOk = procValue !== undefined && (!configured || procValue === settingsValue);
   if (passed && sessionOk && configured) lines.push('結果: 実際の通過確認済み（この Claude Code セッションの要求はゲートウェイを通過しています）');
-  else if (passed && sessionOk) lines.push('結果: 実際の通過確認済み（ただし settings.json は未設定/不正で、シェルの export 等の env のみで接続しています。恒久化するには /buchi:setup を実行してください）');
+  else if (passed && sessionOk) lines.push('結果: 実際の通過確認済み（ただし settings.json は未設定/不正で、シェルの export 等の env のみで接続しています。恒久化するには /buchiai-gateway:setup を実行してください）');
   else if (passed) lines.push('結果: ゲートウェイは通過可能ですが、稼働セッションの設定が未反映/相違です。Claude Code を再起動してから再確認してください');
   else lines.push('結果: 通過未確認（上の [NG] 行を確認してください）');
   return { text: lines.join('\n'), isError: false };
@@ -696,7 +696,7 @@ async function runDoctor() {
 
   // D5: token validity — doctor 自体はトークンを送信しない方針を維持し、実際の
   // 受理/転送の確認は buchi_verify（/v1/messages へのコスト 0 プローブ）に委ねる。
-  lines.push('D5 [注意] トークン有効性: doctor では未検証です（doctor はトークンを送信しません）。/buchi:verify で「設定済み / 疎通 / 実際の通過」を分けて確認できます。');
+  lines.push('D5 [注意] トークン有効性: doctor では未検証です（doctor はトークンを送信しません）。/buchiai-gateway:verify で「設定済み / 疎通 / 実際の通過」を分けて確認できます。');
 
   // D6: ALWAYS — Remote Control incompatibility (#230)
   lines.push('D6 [注意] Remote Control 非互換（#230）: BASE_URL 変更中は claude.ai からのセッション起動・Slack 連携・定期実行が動作しません。');

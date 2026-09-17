@@ -283,12 +283,12 @@ export function releaseLock(lockPath) {
  * Resolution order (empirically measured against Claude Code, Phase 2 spike):
  *  1. BUCHI_STATE_DIR   (test injection)
  *  2. CLAUDE_PLUGIN_DATA (measured: IS auto-passed to MCP server processes)
- *  3. ~/.claude/plugins/data/buchi@buchi-plugins (fallback per coordinator)
+ *  3. ~/.claude/plugins/data/buchiai-gateway@buchi-plugins (fallback per coordinator)
  */
 export function resolveStateDir() {
   if (process.env.BUCHI_STATE_DIR) return process.env.BUCHI_STATE_DIR;
   if (process.env.CLAUDE_PLUGIN_DATA) return process.env.CLAUDE_PLUGIN_DATA;
-  return path.join(os.homedir(), '.claude', 'plugins', 'data', 'buchi@buchi-plugins');
+  return path.join(os.homedir(), '.claude', 'plugins', 'data', 'buchiai-gateway@buchi-plugins');
 }
 
 export function statePath() {
@@ -526,7 +526,7 @@ export function describeProbe(p) {
       return `[NG] 通過未確認: ゲートウェイ自身がエラーを返しました (HTTP ${p.status} ${p.errorType || p.errorCode}${p.message ? ': ' + p.message : ''})`;
     default:
       if (p.status >= 200 && p.status < 300) {
-        return `[NG] 通過未確認: HTTP ${p.status} が返りましたが Anthropic Messages 形式の応答ではありません（キャプティブポータル/別サーバー/誤った BASE_URL の可能性。/buchi:doctor で確認してください）`;
+        return `[NG] 通過未確認: HTTP ${p.status} が返りましたが Anthropic Messages 形式の応答ではありません（キャプティブポータル/別サーバー/誤った BASE_URL の可能性。/buchiai-gateway:doctor で確認してください）`;
       }
       return `[?] 判定不能: HTTP ${p.status}${p.errorType ? ' ' + p.errorType : ''}${p.message ? ': ' + p.message : ''}`;
   }

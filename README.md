@@ -9,11 +9,11 @@
 
 ```
 claude plugin marketplace add yamanexjp/buchi-plugins
-claude plugin install buchi@buchi-plugins \
+claude plugin install buchiai-gateway@buchi-plugins \
   --config gateway_url="https://<あなた>.gw.buchi.ai" \
   --config gateway_token="<TOKEN>"
-claude plugin enable buchi@buchi-plugins
-claude            # 起動後に /buchi:setup → 同意 → Claude Code を再起動 → /buchi:verify
+claude plugin enable buchiai-gateway@buchi-plugins
+claude            # 起動後に /buchiai-gateway:setup → 同意 → Claude Code を再起動 → /buchiai-gateway:verify
 ```
 
 ゲートウェイの `/setup` ページ・管理画面には、あなたの URL とトークンを埋め込んだ
@@ -23,7 +23,7 @@ claude            # 起動後に /buchi:setup → 同意 → Claude Code を再�
 
 | プラグイン | 説明 | ドキュメント |
 |---|---|---|
-| `buchi` | Claude Code のモデル呼び出しをゲートウェイ経由（`https://<gw>/c/<token>`）に切り替える設定支援。`/buchi:setup` `/buchi:status` `/buchi:verify` `/buchi:doctor` `/buchi:off` `/buchi:on` | [plugins/buchi/README.md](plugins/buchi/README.md) |
+| `buchi` | Claude Code のモデル呼び出しをゲートウェイ経由（`https://<gw>/c/<token>`）に切り替える設定支援。`/buchiai-gateway:setup` `/buchiai-gateway:status` `/buchiai-gateway:verify` `/buchiai-gateway:doctor` `/buchiai-gateway:off` `/buchiai-gateway:on` | [plugins/buchiai-gateway-claude/README.md](plugins/buchiai-gateway-claude/README.md) |
 
 ## ライセンス
 

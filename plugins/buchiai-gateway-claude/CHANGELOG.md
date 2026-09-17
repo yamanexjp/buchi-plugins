@@ -6,6 +6,21 @@
 基づき、バージョニングは [Semantic Versioning](https://semver.org/lang/ja/) に
 従います。
 
+## [0.6.0] - 2026-09-17
+
+### Changed（BREAKING）
+
+- プラグイン名を `buchi` → **`buchiai-gateway`** に変更（オーナー指示。Codex 版
+  プラグインと同名に統一）。インストール ID は `buchiai-gateway@buchi-plugins`、
+  スラッシュコマンドは `/buchiai-gateway:setup` 等。旧 `buchi@buchi-plugins` を
+  インストール済みの場合は `claude plugin uninstall buchi@buchi-plugins` 後に
+  再インストールが必要（退避 state のディレクトリも
+  `~/.claude/plugins/data/buchiai-gateway@buchi-plugins` に変わるため、旧版で
+  `/buchi:setup` 済みなら先に `/buchi:off` で復元してから移行すること）。
+- 本体リポジトリ内のディレクトリは `plugin/plugins/buchiai-gateway-claude`
+  （Codex 版 `plugin/plugins/buchiai-gateway` と分離）。MCP サーバー内部の
+  ツール名（`buchi_setup` 等）は変更なし。
+
 ## [0.5.0] - 2026-09-16
 
 ### Added

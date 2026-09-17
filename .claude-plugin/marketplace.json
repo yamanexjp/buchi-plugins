@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-marketplace.json",
   "name": "buchi-plugins",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "ぶち AI ゲートウェイ用 Claude Code プラグイン marketplace",
   "owner": {
     "name": "yamanexjp",
@@ -9,9 +9,9 @@
   },
   "plugins": [
     {
-      "name": "buchi",
-      "source": "./plugins/buchi",
-      "description": "Claude Code のモデル呼び出しを「ぶち AI ゲートウェイ」経由（https://<gw>/c/<token>）に安全に切り替える設定支援プラグイン。/buchi:setup・/buchi:status・/buchi:doctor・/buchi:off・/buchi:on を提供",
+      "name": "buchiai-gateway",
+      "source": "./plugins/buchiai-gateway-claude",
+      "description": "Claude Code のモデル呼び出しを「ぶち AI ゲートウェイ」経由（https://<gw>/c/<token>）に安全に切り替える設定支援プラグイン。/buchiai-gateway:setup・/buchiai-gateway:status・/buchiai-gateway:doctor・/buchiai-gateway:off・/buchiai-gateway:on を提供",
       "category": "integration",
       "strict": true
     }

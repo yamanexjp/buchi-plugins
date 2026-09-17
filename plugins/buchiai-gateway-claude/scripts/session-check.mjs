@@ -19,19 +19,19 @@ try {
     || path.join(os.homedir(), '.claude', 'settings.json');
 
   if (!fs.existsSync(settingsPath)) {
-    emit('ぶち: 未接続です。/buchi:setup を実行してください');
+    emit('ぶち: 未接続です。/buchiai-gateway:setup を実行してください');
   }
 
   let json;
   try {
     json = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
   } catch {
-    emit('ぶち: settings.json が読めません（/buchi:doctor で診断してください）');
+    emit('ぶち: settings.json が読めません（/buchiai-gateway:doctor で診断してください）');
   }
 
   const base = json && json.env && typeof json.env === 'object' ? json.env.ANTHROPIC_BASE_URL : undefined;
   if (base === undefined || base === '') {
-    emit('ぶち: 未接続です。/buchi:setup を実行してください');
+    emit('ぶち: 未接続です。/buchiai-gateway:setup を実行してください');
   }
 
   // Gateway-shaped URL? (…/c/<token>) — derive host WITHOUT ever touching the token.
@@ -39,7 +39,7 @@ try {
   if (!split) {
     // BASE_URL is set but points elsewhere (not a buchi path-auth URL).
     // Intentionally do not print the foreign URL/host.
-    emit('ぶち: 未接続（ANTHROPIC_BASE_URL に別の設定があります。/buchi:status で確認してください）');
+    emit('ぶち: 未接続（ANTHROPIC_BASE_URL に別の設定があります。/buchiai-gateway:status で確認してください）');
   }
 
   let host = '';
@@ -49,7 +49,7 @@ try {
   const h = await healthCheck(split.gatewayUrl, 2000);
   emit(h.ok
     ? `ぶち: 接続中 (${host})`
-    : `ぶち: 接続中 (${host}) ※healthz 疎通NG（/buchi:doctor で診断してください）`);
+    : `ぶち: 接続中 (${host}) ※healthz 疎通NG（/buchiai-gateway:doctor で診断してください）`);
 } catch {
   // Last-resort guard: still one line, still exit 0.
   emit('ぶち: 状態確認をスキップしました（内部エラー）');

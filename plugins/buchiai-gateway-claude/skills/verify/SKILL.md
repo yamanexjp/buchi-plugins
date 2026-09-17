@@ -8,7 +8,7 @@ description: ぶち AI ゲートウェイを「実際に通過しているか」
 照会のみのスキル。**settings.json には何も書き込まないため、ユーザーへの同意確認は不要**。
 ただし既定でもゲートウェイへ 1 リクエスト送信する（下記「何を送るか」）。
 
-`/buchi:status` との違い: status は「設定ファイルに URL がある」「healthz が 200」まで
+`/buchiai-gateway:status` との違い: status は「設定ファイルに URL がある」「healthz が 200」まで
 しか示せない。**設定があっても、いま動いている Claude Code がそれを使っているとは
 限らない**（再起動前・シェルの export 残存）。本スキルは次の 3 段を独立に判定する。
 
@@ -26,8 +26,8 @@ description: ぶち AI ゲートウェイを「実際に通過しているか」
 3. 「結果:」の内容に応じて 1 行だけ補足する:
    - 「実際の通過確認済み」→ 完了。以降の会話はゲートウェイ経由で検査されている。
    - 「通過可能ですが、稼働セッションの設定が未反映/相違」→ Claude Code の再起動を案内し、
-     再起動後にもう一度 `/buchi:verify` を勧める。
-   - 「通過未確認」→ [NG] の段に応じて `/buchi:setup`（未設定）、`/buchi:doctor`（疎通 NG）、
+     再起動後にもう一度 `/buchiai-gateway:verify` を勧める。
+   - 「通過未確認」→ [NG] の段に応じて `/buchiai-gateway:setup`（未設定）、`/buchiai-gateway:doctor`（疎通 NG）、
      userConfig の `gateway_token` 見直し（トークン拒否）を提案する。実行はしない。
 4. ユーザーが「上流まで含めて本当に応答が返るか」を確認したい場合のみ、
    `buchi_verify` を `{ "full": true }` で呼ぶ。これは現プロセス env の
@@ -57,7 +57,7 @@ description: ぶち AI ゲートウェイを「実際に通過しているか」
 - HTTP 200 でも Anthropic Messages 形式（`"type":"message"`）でない応答は
   [NG]（キャプティブポータル・別サーバー・誤った BASE_URL の疑い）。
 - 所要時間は最大で healthz 2 秒 + プローブ 30 秒。MCP ツールは直列実行なので、
-  その間 `/buchi:status` 等の他ツールは待たされる。
+  その間 `/buchiai-gateway:status` 等の他ツールは待たされる。
 
 ## セキュリティ上の絶対条件
 

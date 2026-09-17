@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
-  "name": "buchi",
-  "version": "0.5.0",
+  "name": "buchiai-gateway",
+  "version": "0.6.0",
   "description": "ぶち AI ゲートウェイ経由で Claude Code のモデル呼び出しをルーティングするための設定支援プラグイン（byok モード。DLP と利用可視化が目的）",
   "author": {
     "name": "yamanexjp"
@@ -11,6 +11,7 @@
   "license": "Apache-2.0",
   "keywords": [
     "buchi",
+    "buchiai",
     "gateway",
     "llm-proxy"
   ],
