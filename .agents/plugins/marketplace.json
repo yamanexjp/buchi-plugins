@@ -1,0 +1,13 @@
+{
+  "name": "buchi-plugins",
+  "version": "0.1.0",
+  "interface": { "displayName": "Buchiai Plugins" },
+  "plugins": [
+    {
+      "name": "buchiai-gateway",
+      "source": { "source": "local", "path": "./plugins/buchiai-gateway" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

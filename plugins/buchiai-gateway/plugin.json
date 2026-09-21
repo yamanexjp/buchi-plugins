@@ -1,0 +1,25 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "buchiai-gateway",
+  "version": "0.1.0",
+  "description": "Route Codex model calls through the Buchi AI Gateway (DLP proxy) with safe setup, status, diagnostics, and passage verification.",
+  "author": {
+    "name": "YAMANEX Inc."
+  },
+  "homepage": "https://buchi.ai/gateway",
+  "repository": "https://github.com/itsumonotakumi/buchi-gateway",
+  "license": "MIT",
+  "keywords": ["codex", "gateway", "dlp", "proxy"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Buchiai Gateway",
+        "shortDescription": "Route Codex through the Buchi AI Gateway",
+        "longDescription": "Safely switch Codex model providers to the Buchi AI Gateway (DLP proxy): diff preview, explicit consent, backup, atomic write, full restore, and passage verification.",
+        "developerName": "YAMANEX Inc.",
+        "category": "Productivity",
+        "capabilities": ["Read", "Write"]
+      }
+    }
+  }
+}
